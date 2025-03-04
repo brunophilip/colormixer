@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#A9A9A9"
+    tools:context=".MainActivity">
+
+    <RadioGroup
+        android:id="@+id/colorSelectorGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="16dp">
+
+        <RadioButton
+            android:id="@+id/radioButtonColor1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zone 1"
+            android:checked="true"/>
+
+        <RadioButton
+            android:id="@+id/radioButtonColor2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zone 2"/>
+    </RadioGroup>
+
+    <!-- Zone de prévisualisation de la couleur -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/colorPreviewLayout"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:layout_margin="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/colorSelectorGroup">
+
+        <!-- Zone de couleur 1 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/colorPreviewLayout1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/colorPreviewLayout2" />
+
+        <!-- Zone de couleur 2 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/colorPreviewLayout2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/white"
+            app:layout_constraintStart_toEndOf="@+id/colorPreviewLayout1"
+            app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!-- Titre de la section -->
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Mélange de Couleurs"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/colorPreviewLayout" />
+
+    <!-- SliderBar et pourcentage pour Rouge (Primaire) -->
+    <TextView
+        android:id="@+id/textViewRed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Rouge"
+        android:textColor="#FF0000"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
+
+    <SeekBar
+        android:id="@+id/seekBarRed"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="100"
+        android:progress="0"
+        android:scaleY="1.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewRed" />
+
+    <TextView
+        android:id="@+id/textViewRedPercentage"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="0%"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarRed"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarRed" />
+
+    <!-- SliderBar et pourcentage pour Jaune (Primaire) -->
+    <TextView
+        android:id="@+id/textViewYellow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Jaune"
+        android:textColor="#FFEB3B"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewRed" />
+
+    <SeekBar
+        android:id="@+id/seekBarYellow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="100"
+        android:progress="0"
+        android:scaleY="1.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewYellow" />
+
+    <TextView
+        android:id="@+id/textViewYellowPercentage"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="0%"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarYellow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarYellow" />
+
+    <!-- SliderBar et pourcentage pour Bleu (Primaire) -->
+    <TextView
+        android:id="@+id/textViewBlue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Bleu"
+        android:textColor="#2196F3"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewYellow" />
+
+    <SeekBar
+        android:id="@+id/seekBarBlue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="100"
+        android:progress="0"
+        android:scaleY="1.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewBlue" />
+
+    <TextView
+        android:id="@+id/textViewBluePercentage"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="0%"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarBlue"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarBlue" />
+
+    <!-- SliderBar et pourcentage pour Blanc -->
+    <TextView
+        android:id="@+id/textViewWhite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Blanc"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewBlue" />
+
+    <SeekBar
+        android:id="@+id/seekBarWhite"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="100"
+        android:progress="0"
+        android:scaleY="1.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewWhite" />
+
+    <TextView
+        android:id="@+id/textViewWhitePercentage"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="0%"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarWhite"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarWhite" />
+
+    <!-- SliderBar et pourcentage pour Noir -->
+    <TextView
+        android:id="@+id/textViewBlack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Noir"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewWhite" />
+
+    <SeekBar
+        android:id="@+id/seekBarBlack"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="100"
+        android:progress="0"
+        android:scaleY="1.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewBlack" />
+
+    <TextView
+        android:id="@+id/textViewBlackPercentage"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="0%"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarBlack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarBlack" />
+
+    <Button
+        android:id="@+id/resetButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Réinitialiser"
+        android:textSize="16sp"
+        android:layout_marginTop="24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seekBarBlack" />
+
+    <Button
+        android:id="@+id/complementaryButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Couleur Complémentaire"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/resetButton" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
