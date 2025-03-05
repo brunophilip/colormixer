@@ -1,19 +1,17 @@
-// MainActivity.kt
 package com.bpi.colormixer
 
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Button
-import android.widget.RadioGroup
-import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import android.view.Menu
 import android.view.MenuItem
 import android.content.Intent
-import android.util.Log
+import android.view.View
+import android.widget.ImageView
 
 class MainActivity : AppCompatActivity() {
     // Variables pour stocker les états des curseurs pour Zone 1
@@ -33,10 +31,8 @@ class MainActivity : AppCompatActivity() {
     // Variables pour les SeekBars, TextViews, et les zones de prévisualisation
     private lateinit var colorPreviewLayout1: ConstraintLayout
     private lateinit var colorPreviewLayout2: ConstraintLayout
+    private lateinit var colorMixLayout: ConstraintLayout
     private lateinit var resetButton: Button
-    private lateinit var colorSelectorGroup: RadioGroup
-    private lateinit var radioButtonColor1: RadioButton
-    private lateinit var radioButtonColor2: RadioButton
     private lateinit var complementaryButton: Button
 
     // Déclaration des sliders pour les 5 couleurs de base
@@ -56,6 +52,14 @@ class MainActivity : AppCompatActivity() {
     // Vue qui affichera la couleur mélangée
     private lateinit var colorPreview: ConstraintLayout
 
+    // Variable pour savoir quelle zone est sélectionnée
+    private var selectedZone = 1 // 1 pour zone 1, 2 pour zone 2
+
+    private var mixProgress = 50 // Initialisé à 50 pour un mélange égal
+    private lateinit var seekBarMixProportion: SeekBar
+
+    private lateinit var selectionIcon1: ImageView
+    private lateinit var selectionIcon2: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +82,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_colorWheel -> {
+                val intent = Intent(this, ColorWheelActivity::class.java)
+                startActivity(intent)
+                true
+            }
             R.id.action_about -> {
                 val intent = Intent(this, AboutActivity::class.java)
                 startActivity(intent)
@@ -91,10 +100,10 @@ class MainActivity : AppCompatActivity() {
         // Initialisation des vues
         colorPreviewLayout1 = findViewById(R.id.colorPreviewLayout1)
         colorPreviewLayout2 = findViewById(R.id.colorPreviewLayout2)
+        selectionIcon1 = findViewById(R.id.selectionIcon1)
+        selectionIcon2 = findViewById(R.id.selectionIcon2)
+        colorMixLayout = findViewById(R.id.colorMixLayout)
         resetButton = findViewById(R.id.resetButton)
-        colorSelectorGroup = findViewById(R.id.colorSelectorGroup)
-        radioButtonColor1 = findViewById(R.id.radioButtonColor1)
-        radioButtonColor2 = findViewById(R.id.radioButtonColor2)
         complementaryButton = findViewById(R.id.complementaryButton)
 
         // Association des sliders avec le layout
@@ -114,10 +123,18 @@ class MainActivity : AppCompatActivity() {
         // Association de la vue de prévisualisation
         colorPreview = findViewById(R.id.colorPreviewLayout)
 
-        // Écouteur de changement pour le RadioGroup
-        colorSelectorGroup.setOnCheckedChangeListener { _, checkedId ->
-            updateSeekBarsFromZone()
-        }
+        seekBarMixProportion = findViewById(R.id.seekBarMixProportion)
+        seekBarMixProportion.progress = mixProgress
+
+        seekBarMixProportion.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                mixProgress = progress
+                updateMixedColor()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         // Listener pour le bouton de réinitialisation
         resetButton.setOnClickListener {
@@ -129,6 +146,24 @@ class MainActivity : AppCompatActivity() {
             calculateAndShowComplementaryColor()
         }
 
+        // Clic sur la première zone de prévisualisation
+        colorPreviewLayout1.setOnClickListener {
+            selectedZone = 1
+            selectionIcon1.visibility = View.VISIBLE
+            selectionIcon2.visibility = View.GONE
+            updateSeekBarsForSelectedZone()
+        }
+
+        // Clic sur la deuxième zone de prévisualisation
+        colorPreviewLayout2.setOnClickListener {
+            selectedZone = 2
+            selectionIcon2.visibility = View.VISIBLE
+            selectionIcon1.visibility = View.GONE
+            updateSeekBarsForSelectedZone()
+        }
+
+        selectionIcon1.visibility = View.VISIBLE
+        selectionIcon2.visibility = View.GONE
     }
 
     private fun setupListeners() {
@@ -139,14 +174,26 @@ class MainActivity : AppCompatActivity() {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                     updatePercentages()
 
-                    // Mettre à jour les variables de zone
-                    when (seekBar?.id) {
-                        R.id.seekBarRed -> if (radioButtonColor1.isChecked) zone1Red = progress else zone2Red = progress
-                        R.id.seekBarYellow -> if (radioButtonColor1.isChecked) zone1Yellow = progress else zone2Yellow = progress
-                        R.id.seekBarBlue -> if (radioButtonColor1.isChecked) zone1Blue = progress else zone2Blue = progress
-                        R.id.seekBarWhite -> if (radioButtonColor1.isChecked) zone1White = progress else zone2White = progress
-                        R.id.seekBarBlack -> if (radioButtonColor1.isChecked) zone1Black = progress else zone2Black = progress
+                    // Mettre à jour les variables de la zone sélectionnée
+                    if (selectedZone == 1) {
+                        when (seekBar?.id) {
+                            R.id.seekBarRed -> zone1Red = progress
+                            R.id.seekBarYellow -> zone1Yellow = progress
+                            R.id.seekBarBlue -> zone1Blue = progress
+                            R.id.seekBarWhite -> zone1White = progress
+                            R.id.seekBarBlack -> zone1Black = progress
+                        }
+                    } else if (selectedZone == 2) {
+                        when (seekBar?.id) {
+                            R.id.seekBarRed -> zone2Red = progress
+                            R.id.seekBarYellow -> zone2Yellow = progress
+                            R.id.seekBarBlue -> zone2Blue = progress
+                            R.id.seekBarWhite -> zone2White = progress
+                            R.id.seekBarBlack -> zone2Black = progress
+                        }
                     }
+
+                    // Mettre à jour la couleur de prévisualisation
                     updateColorPreview()
                 }
 
@@ -154,9 +201,30 @@ class MainActivity : AppCompatActivity() {
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
             })
         }
-        resetButton.setOnClickListener {
-            resetSeekBars()
-        }
+    }
+
+    private fun updateMixedColor() {
+        val color1 = calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
+        val color2 = calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
+
+        val mixedColor = mixColorsWithProportion(color1, color2, mixProgress / 100.0f)
+        colorMixLayout.setBackgroundColor(mixedColor)
+    }
+
+    private fun mixColorsWithProportion(color1: Int, color2: Int, proportion: Float): Int {
+        val r1 = Color.red(color1)
+        val g1 = Color.green(color1)
+        val b1 = Color.blue(color1)
+
+        val r2 = Color.red(color2)
+        val g2 = Color.green(color2)
+        val b2 = Color.blue(color2)
+
+        val r = (r1 * (1 - proportion) + r2 * proportion).toInt()
+        val g = (g1 * (1 - proportion) + g2 * proportion).toInt()
+        val b = (b1 * (1 - proportion) + b2 * proportion).toInt()
+
+        return Color.rgb(r, g, b)
     }
 
     private fun updatePercentages() {
@@ -185,8 +253,27 @@ class MainActivity : AppCompatActivity() {
         return (value * 100 / total)
     }
 
-    private fun updateSeekBarsFromZone() {
-        if (radioButtonColor1.isChecked) {
+    private fun updateColorPreview() {
+        // Calculer la couleur basée sur la zone sélectionnée
+        val color = if (selectedZone == 1) {
+            calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
+        } else {
+            calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
+        }
+
+        // Mettre à jour la prévisualisation de la couleur
+        if (selectedZone == 1) {
+            colorPreviewLayout1.setBackgroundColor(color)
+        } else {
+            colorPreviewLayout2.setBackgroundColor(color)
+        }
+
+        updateMixedColor()
+    }
+
+    private fun updateSeekBarsForSelectedZone() {
+        // Mettre à jour les SeekBars en fonction de la zone sélectionnée
+        if (selectedZone == 1) {
             redSeekBar.progress = zone1Red
             yellowSeekBar.progress = zone1Yellow
             blueSeekBar.progress = zone1Blue
@@ -199,28 +286,17 @@ class MainActivity : AppCompatActivity() {
             whiteSeekBar.progress = zone2White
             blackSeekBar.progress = zone2Black
         }
-        updatePercentages()
-        updateColorPreview()
-    }
-
-    // Fonction pour mettre à jour la couleur de la prévisualisation
-    private fun updateColorPreview() {
-        val selectedColor = if (radioButtonColor1.isChecked) colorPreviewLayout1 else colorPreviewLayout2
-        val red = if (radioButtonColor1.isChecked) zone1Red else zone2Red
-        val yellow = if (radioButtonColor1.isChecked) zone1Yellow else zone2Yellow
-        val blue = if (radioButtonColor1.isChecked) zone1Blue else zone2Blue
-        val white = if (radioButtonColor1.isChecked) zone1White else zone2White
-        val black = if (radioButtonColor1.isChecked) zone1Black else zone2Black
-
-        val color = calculateColor(red, yellow, blue, white, black)
-        Log.v("updateColorPreview", "red : $red, yellow : $yellow, blue : $blue, white : $white, black : $black")
-        selectedColor.setBackgroundColor(color)
     }
 
     private fun calculateAndShowComplementaryColor() {
+
+        selectedZone = 2
+        selectionIcon2.visibility = View.VISIBLE
+        selectionIcon1.visibility = View.GONE
+
         // Calculer la couleur complémentaire de la zone 1
         val color = calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
-        val complementaryColor = calculateComplementaryColor(color)
+        val complementaryColor = calculateComplementaryColorRYB(color)
 
         // Extraire les composantes RGB de la couleur complémentaire
         val complementaryRed = Color.red(complementaryColor)
@@ -236,9 +312,6 @@ class MainActivity : AppCompatActivity() {
 
         val colorzone2 = calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
 
-        // Sélectionner la zone 2
-        radioButtonColor2.isChecked = true
-
         // Mettre à jour les curseurs dans l'interface utilisateur
         redSeekBar.progress = zone2Red
         yellowSeekBar.progress = zone2Yellow
@@ -253,22 +326,24 @@ class MainActivity : AppCompatActivity() {
         updatePercentages()
     }
 
-    private fun calculateComplementaryColor(color: Int): Int {
-        // Convertir la couleur RGB en HSV
+    private fun calculateComplementaryColorRYB(color: Int): Int {
         val hsv = FloatArray(3)
         Color.colorToHSV(color, hsv)
-
-        // Inverser la teinte pour obtenir la couleur complémentaire
-        hsv[0] = (hsv[0] + 180) % 360
-
-        // Convertir la couleur HSV en RGB
+        //normalement dans le cercle chromatique RYB l'orange est entre le rouge et le jaune, donc entre 330 et 30 degré.
+        hsv[0] = when {
+            hsv[0] in 330.0..30.0 -> 210f // Orange -> Bleu
+            hsv[0] in 30.0..90.0 -> 300f // Jaune -> Violet
+            hsv[0] in 90.0..180.0 -> 330f // Vert -> Rouge-Violet
+            hsv[0] in 180.0..270.0 -> 30f  // Bleu -> Orange-Rouge
+            hsv[0] in 270.0..330.0 -> 90f // Violet -> Jaune-Vert
+            else -> (hsv[0] + 180) % 360
+        }
         return Color.HSVToColor(hsv)
     }
-/*
-    // Exemple de méthode pour calculer la couleur (simple addition des couleurs)
+
     private fun calculateColor(red: Int, yellow: Int, blue: Int, white: Int, black: Int): Int {
         // Vérifier si toutes les valeurs sont à zéro
-        if (red == 0 && yellow == 0 && blue == 0 && black == 0) {
+        if (red == 0 && yellow == 0 && blue == 0 && white == 0 && black == 0) {
             return Color.WHITE // Retourner du blanc si tout est à zéro
         }
 
@@ -278,172 +353,49 @@ class MainActivity : AppCompatActivity() {
         val whiteValue = white.toFloat()
         val blackValue = black.toFloat()
 
-        val total = redValue + yellowValue + blueValue
+        val total = redValue + yellowValue + blueValue + whiteValue + blackValue
 
         // Normalisation des couleurs (RYB -> RGB conversion)
-        val r = redValue / (if (total == 0f) 1f else total)
-        val y = yellowValue / (if (total == 0f) 1f else total)
-        val b = blueValue / (if (total == 0f) 1f else total)
+        val r = if (total > 0) redValue / total else 0f
+        val y = if (total > 0) yellowValue / total else 0f
+        val b = if (total > 0) blueValue / total else 0f
+        val w = if (total > 0) whiteValue / total else 0f
+        val k = if (total > 0) blackValue / total else 0f
 
-        val finalR = (r + y - b * 0.5f) * 255
-        val finalG = (y + b * 0.5f) * 255
-        val finalB = (b + r * 0.2f) * 255
+        var finalR = (r + y - b * 0.5f) * 255
+        var finalG = (y + b * 0.5f) * 255
+        var finalB = (b + r * 0.2f) * 255
 
-        // Gestion du blanc et du noir
-        val whiteEffect = whiteValue / 200  // Réduit l'impact du blanc (divisé par 200)
-        val blackEffect = blackValue / 200  // Réduit l'impact du noir (divisé par 200)
+        // Gestion du blanc (interpolation linéaire)
+        finalR = (finalR * (1 - w) + 255 * w).coerceIn(0f, 255f)
+        finalG = (finalG * (1 - w) + 255 * w).coerceIn(0f, 255f)
+        finalB = (finalB * (1 - w) + 255 * w).coerceIn(0f, 255f)
 
-        val adjustedR = ((1 - whiteEffect) * finalR + whiteEffect * 255).toInt()
-        val adjustedG = ((1 - whiteEffect) * finalG + whiteEffect * 255).toInt()
-        val adjustedB = ((1 - whiteEffect) * finalB + whiteEffect * 255).toInt()
-
-        val finalAdjustedR = (adjustedR * (1 - blackEffect)).toInt()
-        val finalAdjustedG = (adjustedG * (1 - blackEffect)).toInt()
-        val finalAdjustedB = (adjustedB * (1 - blackEffect)).toInt()
+        // Gestion du noir (effet exponentiel)
+        val blackEffect = k * k
+        finalR = (finalR * (1 - blackEffect)).coerceIn(0f, 255f)
+        finalG = (finalG * (1 - blackEffect)).coerceIn(0f, 255f)
+        finalB = (finalB * (1 - blackEffect)).coerceIn(0f, 255f)
 
         return Color.rgb(
-            finalAdjustedR.coerceIn(0, 255),
-            finalAdjustedG.coerceIn(0, 255),
-            finalAdjustedB.coerceIn(0, 255)
+            finalR.toInt(),
+            finalG.toInt(),
+            finalB.toInt()
         )
     }
-*/
-private fun calculateColor(red: Int, yellow: Int, blue: Int, white: Int, black: Int): Int {
-    // Vérifier si toutes les valeurs sont à zéro
-    if (red == 0 && yellow == 0 && blue == 0 && white == 0 && black == 0) {
-        return Color.WHITE // Retourner du blanc si tout est à zéro
-    }
-
-    val redValue = red.toFloat()
-    val yellowValue = yellow.toFloat()
-    val blueValue = blue.toFloat()
-    val whiteValue = white.toFloat()
-    val blackValue = black.toFloat()
-
-    val total = redValue + yellowValue + blueValue + whiteValue + blackValue
-
-    // Normalisation des couleurs (RYB -> RGB conversion)
-    val r = if (total > 0) redValue / total else 0f
-    val y = if (total > 0) yellowValue / total else 0f
-    val b = if (total > 0) blueValue / total else 0f
-    val w = if (total > 0) whiteValue / total else 0f
-    val k = if (total > 0) blackValue / total else 0f
-
-    var finalR = (r + y - b * 0.5f) * 255
-    var finalG = (y + b * 0.5f) * 255
-    var finalB = (b + r * 0.2f) * 255
-
-    // Gestion du blanc (interpolation linéaire)
-    finalR = (finalR * (1 - w) + 255 * w).coerceIn(0f, 255f)
-    finalG = (finalG * (1 - w) + 255 * w).coerceIn(0f, 255f)
-    finalB = (finalB * (1 - w) + 255 * w).coerceIn(0f, 255f)
-
-    // Gestion du noir (effet exponentiel)
-    val blackEffect = k * k
-    finalR = (finalR * (1 - blackEffect)).coerceIn(0f, 255f)
-    finalG = (finalG * (1 - blackEffect)).coerceIn(0f, 255f)
-    finalB = (finalB * (1 - blackEffect)).coerceIn(0f, 255f)
-
-    return Color.rgb(
-        finalR.toInt(),
-        finalG.toInt(),
-        finalB.toInt()
-    )
-}
-    /*
-private fun updateColorPreview() {
-    val redValue = redSeekBar.progress.toFloat()
-    val yellowValue = yellowSeekBar.progress.toFloat()
-    val blueValue = blueSeekBar.progress.toFloat()
-    val whiteValue = whiteSeekBar.progress.toFloat()
-    val blackValue = blackSeekBar.progress.toFloat()
-
-    val total = redValue + yellowValue + blueValue
-    if (total == 0f) {
-        colorPreview.setBackgroundColor(Color.WHITE)
-        return
-    }
-
-    // Normalisation des couleurs (RYB -> RGB conversion)
-    val r = redValue / total
-    val y = yellowValue / total
-    val b = blueValue / total
-
-    val finalR = (r + y - b * 0.5f) * 255
-    val finalG = (y + b * 0.5f) * 255
-    val finalB = (b + r * 0.2f) * 255
-
-    // 💡 Nouvelle gestion du blanc et du noir
-    val whiteEffect = whiteValue / 200  // Réduit l'impact du blanc (divisé par 200)
-    val blackEffect = blackValue / 200  // Réduit l'impact du noir (divisé par 200)
-
-    val adjustedR = ((1 - whiteEffect) * finalR + whiteEffect * 255).toInt()
-    val adjustedG = ((1 - whiteEffect) * finalG + whiteEffect * 255).toInt()
-    val adjustedB = ((1 - whiteEffect) * finalB + whiteEffect * 255).toInt()
-
-    val finalAdjustedR = (adjustedR * (1 - blackEffect)).toInt()
-    val finalAdjustedG = (adjustedG * (1 - blackEffect)).toInt()
-    val finalAdjustedB = (adjustedB * (1 - blackEffect)).toInt()
-
-    val color = Color.rgb(
-        finalAdjustedR.coerceIn(0, 255),
-        finalAdjustedG.coerceIn(0, 255),
-        finalAdjustedB.coerceIn(0, 255)
-    )
-    colorPreview.setBackgroundColor(color)
-} */
 
     private fun resetAll() {
-        // Réinitialiser les SeekBars
-        val seekBars = listOf(redSeekBar, yellowSeekBar, blueSeekBar, whiteSeekBar, blackSeekBar)
-        for (seekBar in seekBars) {
-            seekBar.progress = 0
-        }
-
-        // Réinitialiser les variables de zone
-        zone1Red = 0
-        zone1Yellow = 0
-        zone1Blue = 0
-        zone1White = 0
-        zone1Black = 0
-        zone2Red = 0
-        zone2Yellow = 0
-        zone2Blue = 0
-        zone2White = 0
-        zone2Black = 0
-
-        // Réinitialiser les zones de prévisualisation
-        colorPreviewLayout1.setBackgroundColor(Color.WHITE)
-        colorPreviewLayout2.setBackgroundColor(Color.WHITE)
-
-        // Mettre à jour les pourcentages et la couleur de prévisualisation
+        // Réinitialiser les sliders et les prévisualisations
+        redSeekBar.progress = 0
+        yellowSeekBar.progress = 0
+        blueSeekBar.progress = 0
+        whiteSeekBar.progress = 0
+        blackSeekBar.progress = 0
+        selectedZone = 1
+        selectionIcon1.visibility = View.VISIBLE
+        selectionIcon2.visibility = View.GONE
+        updateSeekBarsForSelectedZone()
         updatePercentages()
-        updateColorPreview()
-    }
-
-    private fun resetSeekBars() {
-        // Réinitialiser les curseurs
-        val seekBars = listOf(redSeekBar, yellowSeekBar, blueSeekBar, whiteSeekBar, blackSeekBar)
-        for (seekBar in seekBars) {
-            seekBar.progress = 0
-        }
-
-        // Réinitialiser les variables de zone
-        zone1Red = 0
-        zone1Yellow = 0
-        zone1Blue = 0
-        zone1White = 0
-        zone1Black = 0
-        zone2Red = 0
-        zone2Yellow = 0
-        zone2Blue = 0
-        zone2White = 0
-        zone2Black = 0
-
-        // Mettre à jour les pourcentages
-        updatePercentages()
-
-        // Mettre à jour la couleur de prévisualisation
         updateColorPreview()
     }
 
