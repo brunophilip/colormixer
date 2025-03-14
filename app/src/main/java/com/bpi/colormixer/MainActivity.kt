@@ -12,6 +12,7 @@ import android.view.MenuItem
 import android.content.Intent
 import android.view.View
 import android.widget.ImageView
+import kotlin.math.max
 
 class MainActivity : AppCompatActivity() {
     // Variables pour stocker les états des curseurs pour Zone 1
@@ -255,18 +256,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateColorPreview() {
         // Calculer la couleur basée sur la zone sélectionnée
-        val color = if (selectedZone == 1) {
-            calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
-        } else {
-            calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
-        }
+        val color1 = calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
+        val color2 = calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
 
-        // Mettre à jour la prévisualisation de la couleur
-        if (selectedZone == 1) {
-            colorPreviewLayout1.setBackgroundColor(color)
-        } else {
-            colorPreviewLayout2.setBackgroundColor(color)
-        }
+        colorPreviewLayout1.setBackgroundColor(color1)
+
+        colorPreviewLayout2.setBackgroundColor(color2)
 
         updateMixedColor()
     }
@@ -288,57 +283,213 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getColorFromRYBName(colorName: String?): Int {
+        return when (colorName) {
+            "RED" -> Color.RED
+            "YELLOW" -> Color.YELLOW
+            "BLUE" -> Color.BLUE
+            "GREEN" -> Color.GREEN
+            "PURPLE" -> Color.rgb(128, 0, 128) // Violet
+            "ORANGE" -> Color.rgb(255, 165, 0)  // Orange
+            else -> Color.WHITE // Par défaut
+        }
+    }
+
+    private fun getDominantColors(red: Int, yellow: Int, blue: Int): List<Pair<String, Int>> {
+        val colors = listOf(
+            "RED" to red,
+            "YELLOW" to yellow,
+            "BLUE" to blue
+        )
+        // Trier les couleurs par ordre décroissant de leur valeur
+        return colors.sortedByDescending { it.second }
+    }
+
     private fun calculateAndShowComplementaryColor() {
+        // Calculer la couleur complémentaire en fonction de la zone sélectionnée
+        val complementaryColor = calculateComplementaryColorRYB(zone1Red, zone1Yellow, zone1Blue)
 
         selectedZone = 2
         selectionIcon2.visibility = View.VISIBLE
         selectionIcon1.visibility = View.GONE
 
-        // Calculer la couleur complémentaire de la zone 1
-        val color = calculateColor(zone1Red, zone1Yellow, zone1Blue, zone1White, zone1Black)
-        val complementaryColor = calculateComplementaryColorRYB(color)
+        val complementaryValues = getRYBValuesFromColor(complementaryColor)
 
-        // Extraire les composantes RGB de la couleur complémentaire
-        val complementaryRed = Color.red(complementaryColor)
-        val complementaryGreen = Color.green(complementaryColor)
-        val complementaryBlue = Color.blue(complementaryColor)
-
-        // Mettre à jour les curseurs de la zone 2 avec les valeurs RGB de la couleur complémentaire
-        zone2Red = complementaryRed
-        zone2Yellow = complementaryGreen
-        zone2Blue = complementaryBlue
-        zone2White = 0 // Réinitialiser le blanc
-        zone2Black = 0 // Réinitialiser le noir
-
-        val colorzone2 = calculateColor(zone2Red, zone2Yellow, zone2Blue, zone2White, zone2Black)
+        zone2Red = complementaryValues.first
+        zone2Yellow = complementaryValues.second
+        zone2Blue = complementaryValues.third
+        zone2White = zone1White
+        zone2Black = zone1Black
 
         // Mettre à jour les curseurs dans l'interface utilisateur
         redSeekBar.progress = zone2Red
         yellowSeekBar.progress = zone2Yellow
         blueSeekBar.progress = zone2Blue
-        whiteSeekBar.progress = zone2White
-        blackSeekBar.progress = zone2Black
-
-        // Mettre à jour la zone 2 avec la couleur complémentaire
-        colorPreviewLayout2.setBackgroundColor(colorzone2)
 
         // Mettre à jour les pourcentages
         updatePercentages()
+
+        // Mettre à jour la zone 2 avec la couleur complémentaire
+        //colorPreviewLayout2.setBackgroundColor(complementaryColor)
+        updateColorPreview()
     }
 
-    private fun calculateComplementaryColorRYB(color: Int): Int {
-        val hsv = FloatArray(3)
-        Color.colorToHSV(color, hsv)
-        //normalement dans le cercle chromatique RYB l'orange est entre le rouge et le jaune, donc entre 330 et 30 degré.
-        hsv[0] = when {
-            hsv[0] in 330.0..30.0 -> 210f // Orange -> Bleu
-            hsv[0] in 30.0..90.0 -> 300f // Jaune -> Violet
-            hsv[0] in 90.0..180.0 -> 330f // Vert -> Rouge-Violet
-            hsv[0] in 180.0..270.0 -> 30f  // Bleu -> Orange-Rouge
-            hsv[0] in 270.0..330.0 -> 90f // Violet -> Jaune-Vert
-            else -> (hsv[0] + 180) % 360
+    // Définir une map pour reconnaître les couleurs standard
+    private val standardRYBColors = mapOf(
+        Color.RED to "RED",
+        Color.YELLOW to "YELLOW",
+        Color.BLUE to "BLUE",
+        Color.GREEN to "GREEN",
+        Color.rgb(128, 0, 128) to "PURPLE", // Violet
+        Color.rgb(255, 165, 0) to "ORANGE"  // Orange
+    )
+
+    private val rybComplementaryMap = mapOf(
+        "RED" to "GREEN",    // Rouge ↔ Vert
+        "YELLOW" to "PURPLE", // Jaune ↔ Violet
+        "BLUE" to "ORANGE",   // Bleu ↔ Orange
+        "GREEN" to "RED",    // Vert ↔ Rouge
+        "PURPLE" to "YELLOW", // Violet ↔ Jaune
+        "ORANGE" to "BLUE"   // Orange ↔ Bleu
+    )
+
+    // Fonction pour identifier si une couleur est proche d'une couleur standard RYB
+    private fun identifyStandardRYBColor(color: Int): String? {
+        // Calculer la distance entre la couleur donnée et chaque couleur standard
+        val colorDistances = standardRYBColors.map { (stdColor, name) ->
+            val r1 = Color.red(color)
+            val g1 = Color.green(color)
+            val b1 = Color.blue(color)
+
+            val r2 = Color.red(stdColor)
+            val g2 = Color.green(stdColor)
+            val b2 = Color.blue(stdColor)
+
+            // Distance euclidienne dans l'espace RGB
+            val distance = Math.sqrt(
+                Math.pow((r1 - r2).toDouble(), 2.0) +
+                        Math.pow((g1 - g2).toDouble(), 2.0) +
+                        Math.pow((b1 - b2).toDouble(), 2.0)
+            )
+
+            Pair(name, distance)
         }
-        return Color.HSVToColor(hsv)
+
+        // Trouver la couleur standard la plus proche
+        val closestColor = colorDistances.minByOrNull { it.second }
+
+        // Si la distance est inférieure à un seuil, considérer cette couleur comme une couleur standard
+        return if (closestColor != null && closestColor.second < 50.0) {
+            closestColor.first
+        } else {
+            null
+        }
+    }
+
+    private fun mixRYBColors(color1: String, color2: String, color3: String? = null): Int {
+        val rgb1 = getColorFromRYBName(color1)
+        val rgb2 = getColorFromRYBName(color2)
+        val rgb3 = color3?.let { getColorFromRYBName(it) } ?: Color.TRANSPARENT
+
+        // Mélanger les couleurs en moyenne
+        val r = (Color.red(rgb1) + Color.red(rgb2) + if (rgb3 != Color.TRANSPARENT) Color.red(rgb3) else 0) /
+                if (rgb3 != Color.TRANSPARENT) 3 else 2
+        val g = (Color.green(rgb1) + Color.green(rgb2) + if (rgb3 != Color.TRANSPARENT) Color.green(rgb3) else 0) /
+                if (rgb3 != Color.TRANSPARENT) 3 else 2
+        val b = (Color.blue(rgb1) + Color.blue(rgb2) + if (rgb3 != Color.TRANSPARENT) Color.blue(rgb3) else 0) /
+                if (rgb3 != Color.TRANSPARENT) 3 else 2
+
+        return Color.rgb(r, g, b)
+    }
+
+    private fun calculateComplementaryColorRYB(red: Int, yellow: Int, blue: Int): Int {
+        // Calculer la couleur actuelle en RGB
+        val currentColor = calculateColor(red, yellow, blue, 0, 0)
+
+        // Vérifier si c'est une couleur standard
+        val standardColorName = identifyStandardRYBColor(currentColor)
+
+        if (standardColorName != null) {
+            // Si c'est une couleur standard, utiliser directement la map des complémentaires
+            val complementaryName = rybComplementaryMap[standardColorName]
+            if (complementaryName != null) {
+                return getColorFromRYBName(complementaryName)
+            }
+        }
+
+        // Si ce n'est pas une couleur standard, utiliser l'ancienne méthode
+        val dominantColors = getDominantColors(red, yellow, blue)
+
+        return when {
+            // Une seule couleur dominante
+            dominantColors[0].second > 0 && dominantColors[1].second == 0 && dominantColors[2].second == 0 -> {
+                val complementaryColorName = rybComplementaryMap[dominantColors[0].first]
+                getColorFromRYBName(complementaryColorName)
+            }
+            // Deux couleurs dominantes
+            dominantColors[0].second > 0 && dominantColors[1].second > 0 && dominantColors[2].second == 0 -> {
+                val complementaryColorName1 = rybComplementaryMap[dominantColors[0].first] ?: "WHITE"
+                val complementaryColorName2 = rybComplementaryMap[dominantColors[1].first] ?: "WHITE"
+                mixRYBColors(complementaryColorName1, complementaryColorName2)
+            }
+            // Trois couleurs dominantes
+            else -> {
+                val complementaryColorName1 = rybComplementaryMap[dominantColors[0].first] ?: "WHITE"
+                val complementaryColorName2 = rybComplementaryMap[dominantColors[1].first] ?: "WHITE"
+                val minorColorName = dominantColors[2].first
+                mixRYBColors(complementaryColorName1, complementaryColorName2, minorColorName)
+            }
+        }
+    }
+
+    private fun getRYBValuesFromColor(color: Int): Triple<Int, Int, Int> {
+        // Vérifier d'abord si c'est une couleur standard RYB
+        val standardColorName = identifyStandardRYBColor(color)
+
+        if (standardColorName != null) {
+            // Pour les couleurs standard, définir des valeurs RYB représentatives
+            return when (standardColorName) {
+                "RED" -> Triple(255, 0, 0)
+                "YELLOW" -> Triple(0, 255, 0)
+                "BLUE" -> Triple(0, 0, 255)
+                "GREEN" -> Triple(0, 200, 100) // Mélange de jaune et bleu
+                "PURPLE" -> Triple(200, 0, 200) // Mélange de rouge et bleu
+                "ORANGE" -> Triple(230, 150, 0) // Mélange de rouge et jaune
+                else -> Triple(0, 0, 0)
+            }
+        }
+
+        // Pour les autres couleurs, approximer les valeurs RYB
+        val r = Color.red(color)
+        val g = Color.green(color)
+        val b = Color.blue(color)
+
+        // Extraction approximative des composantes RYB
+        // Ajustement des valeurs pour une meilleure répartition
+        val maxValue = 255
+
+        // Algorithme amélioré pour l'extraction RYB à partir de RGB
+        val white = Math.min(r, Math.min(g, b))
+
+        val red = Math.max(0, r - white)
+        val green = Math.max(0, g - white)
+        val blue = Math.max(0, b - white)
+
+        val yellow = Math.min(red, green)
+
+        val pureRed = Math.max(0, red - yellow)
+        val pureBlue = blue
+        val pureYellow = yellow
+
+        // Normaliser les valeurs pour qu'elles restent dans la plage 0-255
+        val maxComponent = Math.max(pureRed, Math.max(pureYellow, pureBlue))
+        val scale = if (maxComponent > 0) maxValue.toFloat() / maxComponent else 1f
+
+        return Triple(
+            (pureRed * scale).toInt().coerceIn(0, maxValue),
+            (pureYellow * scale).toInt().coerceIn(0, maxValue),
+            (pureBlue * scale).toInt().coerceIn(0, maxValue)
+        )
     }
 
     private fun calculateColor(red: Int, yellow: Int, blue: Int, white: Int, black: Int): Int {
